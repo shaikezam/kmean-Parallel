@@ -1,4 +1,6 @@
 #define _GNU_SOURCE
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 #include "myHeader.h"
 #include <stdio.h>
 #include <stdlib.h> 
@@ -6,9 +8,12 @@
 #include <omp.h>
 #include <iostream>
 #include <conio.h>
+#include <time.h>
 
 int main(int argc,char *argv[])
 {
+	clock_t start, finish;  
+    start = clock();  
 	int NUM_OF_DIMENSIONS, NUM_OF_PRODUCTS, MAX_NUM_OF_CLUSTERS, MAX_NUM_OF_ITERATION;
 	float QM;
 	Cluster* clusters = (Cluster*)calloc(NUM_OF_CLUSTERS, sizeof(Cluster));
@@ -24,6 +29,9 @@ int main(int argc,char *argv[])
 		if(tempQM <= QM)
 		{
 			printf("The QM is: %f, GoodBye\n",tempQM);
+			finish = clock();
+
+			printf("Program took %f\n", ((float)(finish - start) / 1000000.0F ) * 1000);
 			break;
 		}
 		NUM_OF_CLUSTERS++;
@@ -175,6 +183,7 @@ bool calculateClusterCenters(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 	{
 		tempCenter.coordinates[i] = tempCenter.coordinates[i] / cluster->numOfPoints;
 	}
+	//calculateCenterUsingCuda(&tempCenter, NUM_OF_DIMENSIONS, cluster->numOfPoints);
 	cluster->center = tempCenter;
 	return returnValue;
 }
@@ -237,7 +246,7 @@ double calculateQM(Cluster* clusters, int NUM_OF_DIMENSIONS, int NUM_OF_CLUSTERS
 	double tempQM = 0;
 	for(int i = 0 ; i < NUM_OF_CLUSTERS ; i++)
 	{
-		double d = (calculateClusterRadius(&clusters[i], NUM_OF_DIMENSIONS)*2);
+		double d = (calculateClusterRadius(&clusters[i], NUM_OF_DIMENSIONS));
 		for(int j = 0 ; j < NUM_OF_CLUSTERS ; j++)
 		{
 			if (i != j)

@@ -8,13 +8,23 @@
 #include <iostream>
 #include <conio.h>
 
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
+typedef struct
+{
+	float* coordinates;
+} Point;
 
-__global__ void addKernel(int *c, const int *a, const int *b)
+typedef struct
+{
+	Point center;
+	Point* points;
+	float radius;
+	int numOfPoints;
+} Cluster;
+
+__global__ void calculateCenter(Point* point, const int NUM_OF_POINTS)
 {
     int i = threadIdx.x;
-    c[i] = a[i] + b[i];
-	printf("%d\n", i);
+    point->coordinates[i] = point->coordinates[i] / NUM_OF_POINTS;
 }
 
 /*int main()
@@ -46,7 +56,71 @@ __global__ void addKernel(int *c, const int *a, const int *b)
 }*/
 
 // Helper function for using CUDA to add vectors in parallel.
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
+Point* calculateCenterUsingCuda(Point* point, const int NUM_OF_DIMENSIONS, const int NUM_OF_POINTS)
+{
+     Point* point_dev;
+
+    Point point_for_dev;
+
+    cudaError_t cudaStatus;
+
+    cudaStatus = cudaSetDevice(0);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+    }
+
+    cudaStatus = cudaMalloc((void**)&point_dev, 1 * sizeof(Point));
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+    }
+
+    cudaStatus = cudaMalloc((void**)&(point_for_dev.coordinates), NUM_OF_DIMENSIONS * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+    }
+
+    cudaStatus = cudaMemcpy(point_dev, &point_for_dev, 1 * sizeof(Point), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+    cudaStatus = cudaMemcpy(point_for_dev.coordinates, point->coordinates, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+    calculateCenter <<< 1, NUM_OF_DIMENSIONS >>>(point_dev, NUM_OF_POINTS);
+
+    cudaStatus = cudaGetLastError();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "calculateCenterlaunch failed: %s\n", cudaGetErrorString(cudaStatus));
+    }
+
+    cudaStatus = cudaDeviceSynchronize();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching calculateCenter!\n", cudaStatus);
+    }
+
+    // Copy output vector from GPU buffer to host memory.
+    cudaStatus = cudaMemcpy(&point_for_dev , point_dev, 1 * sizeof(Point), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+    cudaStatus = cudaMemcpy(point->coordinates , point_for_dev.coordinates, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+    cudaStatus = cudaDeviceReset();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceReset failed!");
+    }
+
+    return point;
+}
+
+/*cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
 {
     int *dev_a = 0;
     int *dev_b = 0;
@@ -123,4 +197,4 @@ Error:
     cudaFree(dev_b);
     
     return cudaStatus;
-}
+}*/
