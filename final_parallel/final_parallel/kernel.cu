@@ -21,10 +21,12 @@ typedef struct
 	int numOfPoints;
 } Cluster;
 
-__global__ void calculateCenter(Point* point, const int NUM_OF_POINTS)
+__global__ void calculateCenter(float* coordinates, const int NUM_OF_POINTS)
 {
     int i = threadIdx.x;
-    point->coordinates[i] = point->coordinates[i] / NUM_OF_POINTS;
+	//printf("Before: %f\n", coordinates[i]);
+    coordinates[i] = coordinates[i] / NUM_OF_POINTS;
+	//printf("After: %f\n", coordinates[i]);
 }
 
 /*int main()
@@ -56,11 +58,9 @@ __global__ void calculateCenter(Point* point, const int NUM_OF_POINTS)
 }*/
 
 // Helper function for using CUDA to add vectors in parallel.
-Point* calculateCenterUsingCuda(Point* point, const int NUM_OF_DIMENSIONS, const int NUM_OF_POINTS)
+float* calculateCenterUsingCuda(float* coordinates, const int NUM_OF_DIMENSIONS, const int NUM_OF_POINTS)
 {
-     Point* point_dev;
-
-    Point point_for_dev;
+    float* coordinates_dev = 0;
 
     cudaError_t cudaStatus;
 
@@ -69,27 +69,17 @@ Point* calculateCenterUsingCuda(Point* point, const int NUM_OF_DIMENSIONS, const
         fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
     }
 
-    cudaStatus = cudaMalloc((void**)&point_dev, 1 * sizeof(Point));
+    cudaStatus = cudaMalloc((void**)&coordinates_dev, NUM_OF_DIMENSIONS * sizeof(float));
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMalloc failed!");
     }
 
-    cudaStatus = cudaMalloc((void**)&(point_for_dev.coordinates), NUM_OF_DIMENSIONS * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-    }
-
-    cudaStatus = cudaMemcpy(point_dev, &point_for_dev, 1 * sizeof(Point), cudaMemcpyHostToDevice);
+    cudaStatus = cudaMemcpy(coordinates_dev, coordinates, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
     }
 
-    cudaStatus = cudaMemcpy(point_for_dev.coordinates, point->coordinates, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-    calculateCenter <<< 1, NUM_OF_DIMENSIONS >>>(point_dev, NUM_OF_POINTS);
+    calculateCenter <<< 1, NUM_OF_DIMENSIONS >>>(coordinates_dev, NUM_OF_POINTS);
 
     cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
@@ -102,12 +92,7 @@ Point* calculateCenterUsingCuda(Point* point, const int NUM_OF_DIMENSIONS, const
     }
 
     // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(&point_for_dev , point_dev, 1 * sizeof(Point), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-    cudaStatus = cudaMemcpy(point->coordinates , point_for_dev.coordinates, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
+    cudaStatus = cudaMemcpy(coordinates, coordinates_dev, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyDeviceToHost);
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
     }
@@ -117,7 +102,8 @@ Point* calculateCenterUsingCuda(Point* point, const int NUM_OF_DIMENSIONS, const
         fprintf(stderr, "cudaDeviceReset failed!");
     }
 
-    return point;
+	//cudaFree(coordinates_dev);
+    return coordinates;
 }
 
 /*cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)

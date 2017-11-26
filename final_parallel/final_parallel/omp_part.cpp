@@ -183,7 +183,7 @@ bool calculateClusterCenters(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 	{
 		tempCenter.coordinates[i] = tempCenter.coordinates[i] / cluster->numOfPoints;
 	}
-	//calculateCenterUsingCuda(&tempCenter, NUM_OF_DIMENSIONS, cluster->numOfPoints);
+	//calculateCenterUsingCuda(tempCenter.coordinates, NUM_OF_DIMENSIONS, cluster->numOfPoints);
 	cluster->center = tempCenter;
 	return returnValue;
 }

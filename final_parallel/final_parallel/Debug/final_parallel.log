@@ -1,4 +1,4 @@
-﻿Build started 11/25/2017 6:56:32 PM.
+﻿Build started 11/26/2017 11:29:59 PM.
      1>Project "E:\College\PComputing\Project-Parallel\final_parallel\final_parallel\final_parallel.vcxproj" on node 2 (build target(s)).
      1>InitializeBuildStatus:
          Creating "Debug\final_parallel.unsuccessfulbuild" because "AlwaysCreate" was specified.
@@ -21,8 +21,8 @@
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(253) : see declaration of 'fscanf'
      1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(64): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(253) : see declaration of 'fscanf'
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(273): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
      1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(274): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(275): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
        ManifestResourceCompile:
          All outputs are up-to-date.
        Link:
@@ -50,4 +50,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:00.84
+Time Elapsed 00:00:01.62
