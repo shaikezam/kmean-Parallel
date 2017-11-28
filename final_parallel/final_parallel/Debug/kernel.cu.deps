@@ -295,6 +295,7 @@ c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\device_launch_pa
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_types.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\device_launch_parameters.h
+C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\device_functions.h
 C:\Software\Visual Studtio C CPP comunity\vc\VC\include\stdio.h
 C:\Software\Visual Studtio C CPP comunity\vc\VC\include\crtdefs.h
 C:\Software\Visual Studtio C CPP comunity\vc\VC\include\swprintf.inl
@@ -374,5 +375,6 @@ C:\Software\Visual Studtio C CPP comunity\vc\VC\include\cerrno
 C:\Software\Visual Studtio C CPP comunity\vc\VC\include\errno.h
 C:\Software\Visual Studtio C CPP comunity\vc\VC\include\crtdefs.h
 C:\Software\Visual Studtio C CPP comunity\vc\VC\include\share.h
+C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda.h
 C:\Software\Visual Studtio C CPP comunity\vc\VC\include\conio.h
 C:\Software\Visual Studtio C CPP comunity\vc\VC\include\crtdefs.h

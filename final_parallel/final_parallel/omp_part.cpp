@@ -19,20 +19,20 @@ int main(int argc,char *argv[])
 	Cluster* clusters = (Cluster*)calloc(NUM_OF_CLUSTERS, sizeof(Cluster));
 	//read points from file
 	Point* points = readDataFromFile(&NUM_OF_DIMENSIONS, &NUM_OF_PRODUCTS, &MAX_NUM_OF_CLUSTERS, &MAX_NUM_OF_ITERATION, &QM, clusters, NUM_OF_CLUSTERS);	
-
+	double tempQM;
 	for( ; NUM_OF_CLUSTERS < MAX_NUM_OF_CLUSTERS ; )
 	{
 		//calculate cluster centers
 		checkIsCurrentClustersEnough(points, clusters, NUM_OF_DIMENSIONS, NUM_OF_PRODUCTS, NUM_OF_CLUSTERS, MAX_NUM_OF_ITERATION);
-		double tempQM = calculateQM(clusters, NUM_OF_DIMENSIONS, NUM_OF_CLUSTERS);
+		tempQM = calculateQM(clusters, NUM_OF_DIMENSIONS, NUM_OF_CLUSTERS);
 		printf("With %d clusters the QM is: %f\n", NUM_OF_CLUSTERS, tempQM);
 		if(tempQM <= QM)
 		{
 			printf("The QM is: %f, GoodBye\n",tempQM);
 			finish = clock();
-
 			printf("Program took %f\n", ((float)(finish - start) / 1000000.0F ) * 1000);
-			break;
+			printOutputFile(clusters, NUM_OF_CLUSTERS, NUM_OF_DIMENSIONS, tempQM);
+			exit(1);
 		}
 		NUM_OF_CLUSTERS++;
 		free(clusters);
@@ -41,6 +41,9 @@ int main(int argc,char *argv[])
 		points = readDataFromFile(&NUM_OF_DIMENSIONS, &NUM_OF_PRODUCTS, &MAX_NUM_OF_CLUSTERS, &MAX_NUM_OF_ITERATION, &QM, clusters, NUM_OF_CLUSTERS);	
 		//clusters = appendPointsAsClusters(clusters, points, &NUM_OF_DIMENSIONS, NUM_OF_CLUSTERS);
 	}
+	finish = clock();
+	printf("Program took %f\n", ((float)(finish - start) / 1000000.0F ) * 1000);
+	printOutputFile(clusters, NUM_OF_CLUSTERS, NUM_OF_DIMENSIONS, tempQM);
 }
 
 Point *readDataFromFile(int* NUM_OF_DIMENSIONS, int* NUM_OF_PRODUCTS, int* MAX_NUM_OF_CLUSTERS, int* MAX_NUM_OF_ITERATION, float* QM, Cluster* clusters, const int NUM_OF_CLUSTERS)
@@ -172,18 +175,42 @@ bool calculateClusterCenters(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 	bool returnValue = true;
 	Point tempCenter;
 	tempCenter.coordinates = (float*)calloc(NUM_OF_DIMENSIONS, sizeof(float));
-	for(int i = 0 ; i < cluster->numOfPoints ; i++)
+	if(RUN_IN_PARALLEL)
 	{
-		for (int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
+		omp_set_num_threads(cluster->numOfPoints);
+ 		#pragma omp parallel private(i)
+ 		#pragma omp parallel for
+		for(int i = 0 ; i < cluster->numOfPoints ; i++)
 		{
-			tempCenter.coordinates[j] += cluster->points[i].coordinates[j];
+			for (int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
+			{
+				tempCenter.coordinates[j] += cluster->points[i].coordinates[j];
+			}
+		}
+		calculateCenterUsingCuda(tempCenter.coordinates, NUM_OF_DIMENSIONS, cluster->numOfPoints);
+		/*for(int i = 0 ; i < NUM_OF_DIMENSIONS ; i++)
+		{
+			tempCenter.coordinates[i] = tempCenter.coordinates[i] / cluster->numOfPoints;
+		}*/
+	}
+	else
+	{
+		for(int i = 0 ; i < cluster->numOfPoints ; i++)
+		{
+			for (int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
+			{
+				tempCenter.coordinates[j] += cluster->points[i].coordinates[j];
+			}
+		}
+		for(int i = 0 ; i < NUM_OF_DIMENSIONS ; i++)
+		{
+			tempCenter.coordinates[i] = tempCenter.coordinates[i] / cluster->numOfPoints;
+			for(int j = 0 ; j < NUM_OF_DIMENSIONS*3 ; j++)
+			{
+				exp(exp(-2.));
+			}
 		}
 	}
-	for(int i = 0 ; i < NUM_OF_DIMENSIONS ; i++)
-	{
-		tempCenter.coordinates[i] = tempCenter.coordinates[i] / cluster->numOfPoints;
-	}
-	//calculateCenterUsingCuda(tempCenter.coordinates, NUM_OF_DIMENSIONS, cluster->numOfPoints);
 	cluster->center = tempCenter;
 	return returnValue;
 }
@@ -244,6 +271,7 @@ void checkIsCurrentClustersEnough(Point* points, Cluster* clusters, const int NU
 double calculateQM(Cluster* clusters, int NUM_OF_DIMENSIONS, int NUM_OF_CLUSTERS)
 {
 	double tempQM = 0;
+
 	for(int i = 0 ; i < NUM_OF_CLUSTERS ; i++)
 	{
 		double d = (calculateClusterRadius(&clusters[i], NUM_OF_DIMENSIONS));
@@ -282,4 +310,25 @@ bool isNeedToCalculateClusterCenter(Cluster* clusters, const int NUM_OF_DIMENSIO
 		}
 	}
 	return false;
+}
+
+void printOutputFile(Cluster* clusters, const int NUM_OF_CLUSTERS, const int NUM_OF_DIMENSIONS, const double QM)
+{
+	FILE* file = fopen(pathToFileOutput, "w");
+	int rc = fprintf(file, "%d,%f\n", NUM_OF_CLUSTERS, QM);
+	for(int i = 0 ; i < NUM_OF_CLUSTERS ; i++)
+	{
+		fprintf(file, "C%d,", (i+1));
+		for(int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
+		{
+			if(j == NUM_OF_DIMENSIONS - 1)
+			{
+				fprintf(file, "%f\n", clusters[i].center.coordinates[j]);
+			}
+			else
+			{
+				fprintf(file, "	%f,", clusters[i].center.coordinates[j]);
+			}
+		}
+	}
 }
