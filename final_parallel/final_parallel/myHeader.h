@@ -14,7 +14,7 @@ typedef struct
 } Cluster;
 
 int NUM_OF_CLUSTERS = 2;
-bool RUN_IN_PARALLEL = false;
+bool RUN_IN_PARALLEL = true;
 Point *readDataFromFile(int* NUM_OF_DIMENSIONS, int* NUM_OF_PRODUCTS, int* MAX_NUM_OF_CLUSTERS, int* MAX_NUM_OF_ITERATION, float* QM, Cluster* clusters, const int NUM_OF_CLUSTERS);
 void addPointsToClusters(Point* points, Cluster* clusters, const int NUM_OF_PRODUCTS, const int NUM_OF_CLUSTERS, const int NUM_OF_DIMENSIONS);
 double getDistance(Point point, Cluster cluster, const int NUM_OF_DIMENSIONS);

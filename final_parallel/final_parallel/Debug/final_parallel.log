@@ -1,4 +1,4 @@
-﻿Build started 11/30/2017 3:44:22 PM.
+﻿Build started 11/30/2017 5:44:33 PM.
      1>Project "E:\College\PComputing\Project-Parallel\final_parallel\final_parallel\final_parallel.vcxproj" on node 2 (build target(s)).
      1>InitializeBuildStatus:
          Creating "Debug\final_parallel.unsuccessfulbuild" because "AlwaysCreate" was specified.
@@ -13,17 +13,17 @@
      1>ClCompile:
          C:\Software\Visual Studtio C CPP comunity\vc\VC\bin\CL.exe /c /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt omp_part.cpp
          omp_part.cpp
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(51): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(53): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(234) : see declaration of 'fopen'
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(52): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(54): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(253) : see declaration of 'fscanf'
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(63): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(65): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(253) : see declaration of 'fscanf'
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(67): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(69): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(253) : see declaration of 'fscanf'
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(290): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(291): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(306): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(293): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(294): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(309): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(234) : see declaration of 'fopen'
        ManifestResourceCompile:
          All outputs are up-to-date.
@@ -52,4 +52,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:01.13
+Time Elapsed 00:00:00.81

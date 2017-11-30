@@ -24,8 +24,10 @@ int main(int argc,char *argv[])
 	{
 		//calculate cluster centers
 		checkIsCurrentClustersEnough(points, clusters, NUM_OF_DIMENSIONS, NUM_OF_PRODUCTS, NUM_OF_CLUSTERS, MAX_NUM_OF_ITERATION);
+		//calculate QM
 		tempQM = calculateQM(clusters, NUM_OF_DIMENSIONS, NUM_OF_CLUSTERS);
 		printf("With %d clusters the QM is: %f\n", NUM_OF_CLUSTERS, tempQM);
+		//if we have good QM we quit
 		if(tempQM <= QM)
 		{
 			printf("The QM is: %f, GoodBye\n",tempQM);
@@ -70,6 +72,7 @@ Point *readDataFromFile(int* NUM_OF_DIMENSIONS, int* NUM_OF_PRODUCTS, int* MAX_N
 		}
 
 	}
+	//assign first NUM_OF_CLUSTERS points as Cluster centers 
 	for(int i = 0 ; i < NUM_OF_CLUSTERS ; i++)
 	{
 		//clusters[i].center.coordinates = (float*)calloc(*NUM_OF_DIMENSIONS, sizeof(float));
