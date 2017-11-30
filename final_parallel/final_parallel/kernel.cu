@@ -60,6 +60,30 @@ __global__ void calculateDistance(float* coordinates1, float* coordinates2, doub
 	//printf("After: %f\n", coordinates[i]);
 }
 
+__device__ int counter;
+
+__global__ void calculateClusterDGlobal(float* distances, float* cords, const int NUM_OF_DIMENSIONS, int NUM_OF_POINTS, int *current_thread_count)
+{
+	printf("%d\n", blockIdx.y);
+	
+	int mainPointIndex = blockIdx.x;
+	int secondaryPointIndex = threadIdx.x;
+	printf("%d\n", current_thread_count[0]);	
+	int current_val = *current_thread_count;
+	for (int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
+	{
+		float c1 = cords[mainPointIndex*NUM_OF_DIMENSIONS + j];
+		float c2 = cords[secondaryPointIndex*NUM_OF_DIMENSIONS + j];
+		distances[current_val] = (c1 - c2)*(c1 - c2);
+	}
+	
+	distances[current_val] = sqrt(distances[current_val]);
+	/*printf("againstPoint*NUM_OF_DIMENSIONS = %d\n", whichPoint*NUM_OF_DIMENSIONS);
+	printf("againstPoint*NUM_OF_DIMENSIONS = %d\n", againstPoint*NUM_OF_DIMENSIONS);*/
+	printf("distances[%d] = %f\n", current_val, distances[current_val]);
+	atomicAdd(current_thread_count, 1);
+}
+
 /*int main()
 {
     const int arraySize = 5;
@@ -281,6 +305,81 @@ double* calculateDistanceBetween2PointsUsingCuda(float* coordinates1, float* coo
     }
 
     return sum;
+}
+
+float* calculateClusterD(Cluster* cluster, const int NUM_OF_DIMENSIONS)
+{
+	int tally = 0, *dev_tally;
+
+	cudaMalloc((void **)&dev_tally, sizeof(int));
+
+	cudaMemcpy(dev_tally, &tally, sizeof(int), cudaMemcpyHostToDevice);
+
+	float* temp_cords = (float*)calloc(cluster->numOfPoints  * NUM_OF_DIMENSIONS, sizeof(float));
+	float* temp_cords_dev;
+	int count = 0;
+	for(int i = 0 ; i < cluster->numOfPoints ; i++)
+	{
+		for(int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
+		{
+			temp_cords[count] = cluster->points[i].coordinates[j];
+			count++;
+		}
+	}
+	float* temp_distances = (float*)calloc(cluster->numOfPoints  * cluster->numOfPoints * NUM_OF_DIMENSIONS, sizeof(float));
+	float* temp_distances_dev;
+	cudaError_t cudaStatus;
+
+    cudaStatus = cudaSetDevice(0);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+    }
+
+	cudaStatus = cudaMalloc((void**)&temp_cords_dev, cluster->numOfPoints  * NUM_OF_DIMENSIONS * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+    }
+
+	cudaStatus = cudaMalloc((void**)&temp_distances_dev, cluster->numOfPoints  * cluster->numOfPoints * NUM_OF_DIMENSIONS * sizeof(float));
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+    }
+
+	cudaStatus = cudaMemcpy(temp_cords_dev, temp_cords, cluster->numOfPoints  * NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+	cudaStatus = cudaMemcpy(temp_distances_dev, temp_distances, cluster->numOfPoints * cluster->numOfPoints * NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+	calculateClusterDGlobal <<< cluster->numOfPoints, cluster->numOfPoints >>>(temp_distances_dev, temp_cords_dev, NUM_OF_DIMENSIONS, cluster->numOfPoints, dev_tally);
+
+	cudaStatus = cudaGetLastError();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "calculateCenterlaunch failed: %s\n", cudaGetErrorString(cudaStatus));
+    }
+
+    cudaStatus = cudaDeviceSynchronize();
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching calculateCenter!\n", cudaStatus);
+    }
+
+	// Copy output vector from GPU buffer to host memory.
+    cudaStatus = cudaMemcpy(temp_distances, temp_distances_dev, cluster->numOfPoints * cluster->numOfPoints * NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyDeviceToHost);
+    if (cudaStatus != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+    }
+
+	cudaMemcpy(&tally, dev_tally, sizeof(int), cudaMemcpyDeviceToHost); 
+	printf("total number of threads that executed was: %d\n", tally);
+
+	//cudaFree(temp_distances_dev);
+	//cudaFree(temp_cords_dev);
+	//free(temp_cords);
+	return temp_distances;
 }
 
 /*cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)

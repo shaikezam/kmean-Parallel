@@ -188,10 +188,6 @@ bool calculateClusterCenters(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 			}
 		}
 		calculateCenterUsingCuda(tempCenter.coordinates, NUM_OF_DIMENSIONS, cluster->numOfPoints);
-		/*for(int i = 0 ; i < NUM_OF_DIMENSIONS ; i++)
-		{
-			tempCenter.coordinates[i] = tempCenter.coordinates[i] / cluster->numOfPoints;
-		}*/
 	}
 	else
 	{
@@ -219,20 +215,37 @@ double calculateClusterRadius(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 {
 	//printf("Num of points: %d\n", cluster->numOfPoints);
 	double tempRadius = 0;
-	for(int i = 0 ; i < cluster->numOfPoints ; i++)
+	/*if(RUN_IN_PARALLEL)
 	{
-		for(int j = 0 ; j < cluster->numOfPoints ; j++)
+		float* temp = calculateClusterD(cluster, NUM_OF_DIMENSIONS);
+		for(int i = 0 ; i < cluster->numOfPoints * cluster->numOfPoints ; i++)
 		{
-			if(i != j)
+			printf("%f\n", temp[i]);
+			if( temp[i] > tempRadius)
 			{
-				double calculatedRadius = getDistanceBetweenTwoPoints(cluster->points[i], cluster->points[j], NUM_OF_DIMENSIONS);
-				if(calculatedRadius > tempRadius)
+				tempRadius =  temp[i];
+			}
+		}
+		tempRadius = max(temp, cluster->numOfPoints, cluster->numOfPoints);
+	}
+	else
+	{*/
+		for(int i = 0 ; i < cluster->numOfPoints ; i++)
+		{
+			for(int j = 0 ; j < cluster->numOfPoints ; j++)
+			{
+				if(i != j)
 				{
-					tempRadius = calculatedRadius;
+					double calculatedRadius = getDistanceBetweenTwoPoints(cluster->points[i], cluster->points[j], NUM_OF_DIMENSIONS);
+					if(calculatedRadius > tempRadius)
+					{
+						tempRadius = calculatedRadius;
+					}
 				}
 			}
 		}
-	}
+	//}
+	
 	return tempRadius;
 }
 
@@ -290,6 +303,7 @@ double calculateQM(Cluster* clusters, int NUM_OF_DIMENSIONS, int NUM_OF_CLUSTERS
 bool isNeedToCalculateClusterCenter(Cluster* clusters, const int NUM_OF_DIMENSIONS, const int NUM_OF_CLUSTERS)
 {
 	int clusterIndex = 0;
+
 	for(int i = 0 ; i < NUM_OF_CLUSTERS ; i++)
 	{
 		for(int j = 0 ; j< clusters[i].numOfPoints ; j++)
@@ -331,4 +345,16 @@ void printOutputFile(Cluster* clusters, const int NUM_OF_CLUSTERS, const int NUM
 			}
 		}
 	}
+}
+
+double max(float A[], int i, int j)
+{
+    int idx;
+    double max_val = 0; /* = 0 not needed according to Jim Cownie comment */
+
+    #pragma omp parallel for reduction(max:max_val) 
+    for (idx = i; idx < j; idx++)
+       max_val = max_val > A[idx] ? max_val : A[idx];
+
+    return max_val;
 }

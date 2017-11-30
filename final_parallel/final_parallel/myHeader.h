@@ -29,6 +29,8 @@ double calculateQM(Cluster* clusters, int NUM_OF_DIMENSIONS, int NUM_OF_CLUSTERS
 Cluster* appendPointsAsClusters(Cluster* clusters, Point* points, int* NUM_OF_DIMENSIONS, const int NUM_OF_CLUSTERS);
 float* calculateCenterUsingCuda(float* coordinates, const int NUM_OF_DIMENSIONS, const int NUM_OF_POINTS);
 float* calculateCenterUsingCuda2(Cluster* cluster, const int NUM_OF_DIMENSIONS);
+float* calculateClusterD(Cluster* cluster, const int NUM_OF_DIMENSIONS);
+double max(float A[], int i, int j);
 //const char* pathToFile = "C:/Shay Zambrovski/kmean/Sales_Transactions_Dataset_Weekly.dat";
 const char* pathToFile = "E:/College/PComputing/Project-Parallel/Sales_Transactions_Dataset_Weekly.dat";
 //const char* pathToFileOutput = "C:/Shay Zambrovski/kmean/Sales_Transactions_Dataset_Weekly_Output.dat";
