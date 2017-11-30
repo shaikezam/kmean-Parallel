@@ -175,36 +175,19 @@ bool calculateClusterCenters(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 	bool returnValue = true;
 	Point tempCenter;
 	tempCenter.coordinates = (float*)calloc(NUM_OF_DIMENSIONS, sizeof(float));
-	if(RUN_IN_PARALLEL)
+	for(int i = 0 ; i < cluster->numOfPoints ; i++)
 	{
-		omp_set_num_threads(cluster->numOfPoints);
- 		#pragma omp parallel private(i)
- 		#pragma omp parallel for
-		for(int i = 0 ; i < cluster->numOfPoints ; i++)
+		for (int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
 		{
-			for (int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
-			{
 				tempCenter.coordinates[j] += cluster->points[i].coordinates[j];
-			}
 		}
-		calculateCenterUsingCuda(tempCenter.coordinates, NUM_OF_DIMENSIONS, cluster->numOfPoints);
 	}
-	else
+	for(int i = 0 ; i < NUM_OF_DIMENSIONS ; i++)
 	{
-		for(int i = 0 ; i < cluster->numOfPoints ; i++)
+		tempCenter.coordinates[i] = tempCenter.coordinates[i] / cluster->numOfPoints;
+		for(int j = 0 ; j < NUM_OF_DIMENSIONS*3 ; j++)
 		{
-			for (int j = 0 ; j < NUM_OF_DIMENSIONS ; j++)
-			{
-				tempCenter.coordinates[j] += cluster->points[i].coordinates[j];
-			}
-		}
-		for(int i = 0 ; i < NUM_OF_DIMENSIONS ; i++)
-		{
-			tempCenter.coordinates[i] = tempCenter.coordinates[i] / cluster->numOfPoints;
-			for(int j = 0 ; j < NUM_OF_DIMENSIONS*3 ; j++)
-			{
-				exp(exp(-2.));
-			}
+			exp(exp(-2.));
 		}
 	}
 	cluster->center = tempCenter;
@@ -215,21 +198,13 @@ double calculateClusterRadius(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 {
 	//printf("Num of points: %d\n", cluster->numOfPoints);
 	double tempRadius = 0;
-	/*if(RUN_IN_PARALLEL)
+	if(RUN_IN_PARALLEL)
 	{
 		float* temp = calculateClusterD(cluster, NUM_OF_DIMENSIONS);
-		for(int i = 0 ; i < cluster->numOfPoints * cluster->numOfPoints ; i++)
-		{
-			printf("%f\n", temp[i]);
-			if( temp[i] > tempRadius)
-			{
-				tempRadius =  temp[i];
-			}
-		}
-		tempRadius = max(temp, cluster->numOfPoints, cluster->numOfPoints);
+		tempRadius = max(temp, cluster->numOfPoints,cluster->numOfPoints);
 	}
 	else
-	{*/
+	{
 		for(int i = 0 ; i < cluster->numOfPoints ; i++)
 		{
 			for(int j = 0 ; j < cluster->numOfPoints ; j++)
@@ -244,7 +219,7 @@ double calculateClusterRadius(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 				}
 			}
 		}
-	//}
+	}
 	
 	return tempRadius;
 }
@@ -349,12 +324,14 @@ void printOutputFile(Cluster* clusters, const int NUM_OF_CLUSTERS, const int NUM
 
 double max(float A[], int i, int j)
 {
-    int idx;
-    double max_val = 0; /* = 0 not needed according to Jim Cownie comment */
-
-    #pragma omp parallel for reduction(max:max_val) 
-    for (idx = i; idx < j; idx++)
-       max_val = max_val > A[idx] ? max_val : A[idx];
-
-    return max_val;
+	float max_val = 0;
+    #pragma omp parallel for reduction(max : max_val)
+    for( int p=0;p<i*j; p++)
+    {
+        if(A[p] > max_val)
+        {
+            max_val = A[p];   
+        }
+    }
+	return max_val;
 }

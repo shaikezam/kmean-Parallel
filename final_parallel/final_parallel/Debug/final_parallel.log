@@ -1,4 +1,4 @@
-﻿Build started 11/30/2017 12:43:47 AM.
+﻿Build started 11/30/2017 3:44:22 PM.
      1>Project "E:\College\PComputing\Project-Parallel\final_parallel\final_parallel\final_parallel.vcxproj" on node 2 (build target(s)).
      1>InitializeBuildStatus:
          Creating "Debug\final_parallel.unsuccessfulbuild" because "AlwaysCreate" was specified.
@@ -21,9 +21,9 @@
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(253) : see declaration of 'fscanf'
      1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(67): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(253) : see declaration of 'fscanf'
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(315): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(316): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
-     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(331): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(290): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(291): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>e:\college\pcomputing\project-parallel\final_parallel\final_parallel\omp_part.cpp(306): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  c:\software\visual studtio c cpp comunity\vc\vc\include\stdio.h(234) : see declaration of 'fopen'
        ManifestResourceCompile:
          All outputs are up-to-date.
@@ -52,4 +52,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:00.83
+Time Elapsed 00:00:01.13

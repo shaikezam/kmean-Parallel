@@ -31,37 +31,6 @@ __global__ void calculateCenter(float* coordinates, const int NUM_OF_POINTS)
 	//printf("After: %f\n", coordinates[i]);
 }
 
-__global__ void calculateCenter2(Point* points, float* coordinates)
-{
-    int i = threadIdx.x;
-	int y = blockIdx.x;
-	//printf("y = %d\n", y);
-	//printf("i = %d\n", i);
-	if(i == 0)
-	{
-		printf("index = %d\n",i);
-	}
-	else
-	{
-		printf("index = %d\n",(y+i)*i);
-	}
-	Point point = points[y];
-	//printf("Before: %f\n", coordinates[i]);
-    coordinates[i*y + (i - y)] = point.coordinates[i];
-	//printf("After: %f\n", coordinates[i]);
-}
-
-__global__ void calculateDistance(float* coordinates1, float* coordinates2, double* sum)
-{
-    int i = threadIdx.x;
-	//printf("Before: %f\n", coordinates[i]);
-    double temp = (coordinates1[i] - coordinates2[i])*(coordinates1[i] - coordinates2[i]);
-	//atomicAdd(&sum[0], temp);
-	//printf("After: %f\n", coordinates[i]);
-}
-
-__device__ int counter;
-
 __global__ void calculateClusterDGlobal(float* distances, float* cords, const int NUM_OF_DIMENSIONS, int NUM_OF_POINTS, int *current_thread_count)
 {
 	printf("%d\n", blockIdx.y);
@@ -162,161 +131,48 @@ float* calculateCenterUsingCuda(float* coordinates, const int NUM_OF_DIMENSIONS,
     return coordinates;
 }
 
-float* calculateCenterUsingCuda2(Cluster* cluster, const int NUM_OF_DIMENSIONS)
+__global__ void calculateDistancOnlyCord(float* points, float* sharedResults, int numOfPoints, int NUM_OF_DIMENSIONS)
 {
-	const int numOfPoints = cluster->numOfPoints;
-    float* coordinates_dev;
-	float* coordinates = (float*)calloc(NUM_OF_DIMENSIONS * numOfPoints, sizeof(float));
-	Point* points_dev;
-    cudaError_t cudaStatus;
+	int col = threadIdx.x; // 52
+	int row = blockIdx.x; //811
+	int pos = row*NUM_OF_DIMENSIONS + col;
+	int block = NUM_OF_DIMENSIONS*numOfPoints;
 
-    cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-    }
+	//Calculate distance between point P1 and all other points (x1-x2)x(x1-x2), (y1-y2)X(y1-y2), ....... and put results in shared temp matrix
 
-    cudaStatus = cudaMalloc((void**)&coordinates_dev, NUM_OF_DIMENSIONS * numOfPoints * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-    }
+	for (int i = 0; i < numOfPoints; i++) {
 
-	cudaStatus = cudaMalloc((void**)&points_dev, numOfPoints * sizeof(Point));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-    }
+		sharedResults[(block*row) + (i*NUM_OF_DIMENSIONS) + col] = (points[pos] - points[i*NUM_OF_DIMENSIONS + col])*(points[pos] - points[i*NUM_OF_DIMENSIONS + col]);
+	}
+};
 
-    cudaStatus = cudaMemcpy(coordinates_dev, coordinates, NUM_OF_DIMENSIONS * numOfPoints * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
 
-	cudaStatus = cudaMemcpy(points_dev, cluster->points, numOfPoints * sizeof(Point), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-    calculateCenter2 <<<numOfPoints, NUM_OF_DIMENSIONS>>>(points_dev, coordinates_dev);
-
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "calculateCenterlaunch failed: %s\n", cudaGetErrorString(cudaStatus));
-    }
-
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching calculateCenter!\n", cudaStatus);
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(coordinates, coordinates_dev, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-	cudaFree(coordinates_dev);
-	cudaFree(points_dev);
-
-	cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-    }
-
-    return coordinates;
-}
-
-double* calculateDistanceBetween2PointsUsingCuda(float* coordinates1, float* coordinates2, double* sum, const int NUM_OF_DIMENSIONS)
+__global__ void calculateDistanceBetweenAllPointsAndCords(float* sharedResults, int numOfPoints, int NUM_OF_DIMENSIONS, float * results)
 {
-	double* sum_dev = 0;
-    float* coordinates_dev1 = 0;
-	float* coordinates_dev2 = 0;
+	//1 block, 811 threads
+	int tid = threadIdx.x;
+	int block = NUM_OF_DIMENSIONS*numOfPoints;
+	int startIdx = tid*block;
+	//int endIdx = tid*block+block;
 
-    cudaError_t cudaStatus;
+	float sum = 0;
+	//Work on blocks of 811 rows - sum and calc square root
+	for (int i = 0; i < numOfPoints; i++) {
+		sum = 0;
+		for (int j = 0; j < NUM_OF_DIMENSIONS; j++) {
+			sum += sharedResults[startIdx + (i*NUM_OF_DIMENSIONS) + j];
+		}
 
-    cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-    }
+		results[tid*numOfPoints + i] = sqrt(sum);
+	}
 
-    cudaStatus = cudaMalloc((void**)&coordinates_dev1, NUM_OF_DIMENSIONS * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-    }
-
-	cudaStatus = cudaMalloc((void**)&coordinates_dev2, NUM_OF_DIMENSIONS * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-    }
-
-	cudaStatus = cudaMalloc((void**)&sum_dev, 1 * sizeof(double));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-    }
-
-    cudaStatus = cudaMemcpy(coordinates_dev1, coordinates1, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-	cudaStatus = cudaMemcpy(coordinates_dev2, coordinates2, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-	cudaStatus = cudaMemcpy(sum_dev, sum, 1 * sizeof(double), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-    calculateDistance <<< 1, NUM_OF_DIMENSIONS >>>(coordinates_dev1, coordinates_dev2, sum);
-
-    cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "calculateCenterlaunch failed: %s\n", cudaGetErrorString(cudaStatus));
-    }
-
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching calculateCenter!\n", cudaStatus);
-    }
-
-    // Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(coordinates1, coordinates_dev1, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-	cudaStatus = cudaMemcpy(coordinates2, coordinates_dev2, NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-	cudaStatus = cudaMemcpy(sum, sum_dev, 1 * sizeof(double), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
-
-	cudaFree(coordinates_dev1);
-	cudaFree(coordinates_dev2);
-	cudaFree(sum_dev);
-
-	cudaStatus = cudaDeviceReset();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceReset failed!");
-    }
-
-    return sum;
-}
+};
 
 float* calculateClusterD(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 {
-	int tally = 0, *dev_tally;
-
-	cudaMalloc((void **)&dev_tally, sizeof(int));
-
-	cudaMemcpy(dev_tally, &tally, sizeof(int), cudaMemcpyHostToDevice);
 
 	float* temp_cords = (float*)calloc(cluster->numOfPoints  * NUM_OF_DIMENSIONS, sizeof(float));
-	float* temp_cords_dev;
+	cudaError_t cudaStatus;
 	int count = 0;
 	for(int i = 0 ; i < cluster->numOfPoints ; i++)
 	{
@@ -326,60 +182,91 @@ float* calculateClusterD(Cluster* cluster, const int NUM_OF_DIMENSIONS)
 			count++;
 		}
 	}
-	float* temp_distances = (float*)calloc(cluster->numOfPoints  * cluster->numOfPoints * NUM_OF_DIMENSIONS, sizeof(float));
-	float* temp_distances_dev;
-	cudaError_t cudaStatus;
+	
+	float* dev_points;
+	float* sharedResults;
+	float* results;
+	float * resultsFromCuda = new float[cluster->numOfPoints*cluster->numOfPoints];
+	
 
-    cudaStatus = cudaSetDevice(0);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-    }
+	// Choose which GPU to run on, change this on a multi-GPU system.
+	cudaStatus = cudaSetDevice(0);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+		//error(dev_points, sharedResults, results);
+	}
 
-	cudaStatus = cudaMalloc((void**)&temp_cords_dev, cluster->numOfPoints  * NUM_OF_DIMENSIONS * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-    }
+	// Allocate GPU buffers for Array of all points
+	cudaStatus = cudaMalloc((void**)&dev_points, sizeof(float)*NUM_OF_DIMENSIONS*cluster->numOfPoints);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMalloc failed!");
+	}
 
-	cudaStatus = cudaMalloc((void**)&temp_distances_dev, cluster->numOfPoints  * cluster->numOfPoints * NUM_OF_DIMENSIONS * sizeof(float));
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-    }
+	// Allocate GPU buffers for Results array
+	cudaStatus = cudaMalloc((void**)&results, sizeof(float)*cluster->numOfPoints*cluster->numOfPoints);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMalloc failed!");
+	}
 
-	cudaStatus = cudaMemcpy(temp_cords_dev, temp_cords, cluster->numOfPoints  * NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
+	// Allocate GPU buffers for Shared results array
+	cudaStatus = cudaMalloc((void**)&sharedResults, sizeof(float)*NUM_OF_DIMENSIONS*cluster->numOfPoints*cluster->numOfPoints);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMalloc failed!");
+	}
 
-	cudaStatus = cudaMemcpy(temp_distances_dev, temp_distances, cluster->numOfPoints * cluster->numOfPoints * NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyHostToDevice);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
 
-	calculateClusterDGlobal <<< cluster->numOfPoints, cluster->numOfPoints >>>(temp_distances_dev, temp_cords_dev, NUM_OF_DIMENSIONS, cluster->numOfPoints, dev_tally);
+	// Copy input array of points from host memory to GPU buffers.
+	cudaStatus = cudaMemcpyAsync(dev_points, temp_cords, sizeof(float)*NUM_OF_DIMENSIONS*cluster->numOfPoints, cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMemcpy dev_coordinates_1 failed!");
+	}
 
+
+
+	// Launch a kernel on the GPU to calculate partial distances by coordinate .
+	calculateDistancOnlyCord << <cluster->numOfPoints, NUM_OF_DIMENSIONS >> >(dev_points, sharedResults, cluster->numOfPoints, NUM_OF_DIMENSIONS);
+
+
+	// Check for any errors launching the kernel
 	cudaStatus = cudaGetLastError();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "calculateCenterlaunch failed: %s\n", cudaGetErrorString(cudaStatus));
-    }
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "calcExtendHistograma launch failed: %s\n", cudaGetErrorString(cudaStatus));
+	}
 
-    cudaStatus = cudaDeviceSynchronize();
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching calculateCenter!\n", cudaStatus);
-    }
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching calcExtendHistograma!\n", cudaStatus);
+	}
+
+	// Launch a kernel on the GPU to calculate distances between each 2 points
+	calculateDistanceBetweenAllPointsAndCords << <1, cluster->numOfPoints >> >(sharedResults, cluster->numOfPoints, NUM_OF_DIMENSIONS, results);
+
+
+	// Check for any errors launching the kernel
+	cudaStatus = cudaGetLastError();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "calcExtendHistograma launch failed: %s\n", cudaGetErrorString(cudaStatus));
+	}
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching calcExtendHistograma!\n", cudaStatus);
+	}
+
 
 	// Copy output vector from GPU buffer to host memory.
-    cudaStatus = cudaMemcpy(temp_distances, temp_distances_dev, cluster->numOfPoints * cluster->numOfPoints * NUM_OF_DIMENSIONS * sizeof(float), cudaMemcpyDeviceToHost);
-    if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy failed!");
-    }
+	cudaStatus = cudaMemcpyAsync(resultsFromCuda, results, sizeof(float)*cluster->numOfPoints*cluster->numOfPoints, cudaMemcpyDeviceToHost);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMemcpy failed!");
+		//goto Error;
+	}
 
-	cudaMemcpy(&tally, dev_tally, sizeof(int), cudaMemcpyDeviceToHost); 
-	printf("total number of threads that executed was: %d\n", tally);
+	cudaFree(dev_points);
+	cudaFree(sharedResults);
+	cudaFree(results);
 
-	//cudaFree(temp_distances_dev);
-	//cudaFree(temp_cords_dev);
-	//free(temp_cords);
-	return temp_distances;
+	return resultsFromCuda;
+
 }
 
 /*cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
